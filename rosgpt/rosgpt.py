@@ -20,9 +20,11 @@ from flask_cors import CORS
 import pyttsx3  # pip install pyttsx3 #you need to install libespeak1 on Ubuntu # sudo apt-get install libespeak1
 from rclpy.executors import SingleThreadedExecutor
 import subprocess
-
+from openai import OpenAI
 from ament_index_python import get_package_share_directory
 
+# OpenAI Client
+client = OpenAI()
 # Instantiate a Flask application object with the given name
 app = Flask(__name__)
 
@@ -100,8 +102,6 @@ class ROSGPTNode(Node):
         self.publisher.publish(msg) # Publish the message using the publisher 
         #print('message Published: ', message) # Log the published message
         #print('msg.data Published: ', msg.data) # Log the published message
-        
-        
 
 
 
@@ -181,19 +181,16 @@ class ROSGPTProxy(Resource):
 
         # Try to send the request to the GPT-3 model and handle any exceptions
         try:
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=messages,
-            )
-        except openai.error.InvalidRequestError as e:
-            print(f"Error: {e}")
+            response = client.chat.completions.create(model="gpt-3.5-turbo", messages=messages)
+        except openai.InvalidRequestError as e:
+            self.get_logger().error(f"Error: {e}")
             return None
         except Exception as e:
             print(f"Unexpected error: {e}")
             return None
         
         # Extract the GPT-3 model response from the returned JSON
-        chatgpt_response = response.choices[0].message['content'].strip()
+        chatgpt_response = response.choices[0].message.content.strip()
         #print(chatgpt_response)
         # Find the start and end indices of the JSON string in the response
         start_index = chatgpt_response.find('{')

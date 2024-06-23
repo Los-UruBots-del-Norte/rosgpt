@@ -38,7 +38,7 @@ The ROSGPT ROS2 package includes a collection of scripts that work together to p
 - **rosgpt.py**: This script creates the ROSGPT node, which is a ROS2 node with a REST server that takes in POST requests containing natural human language text. It then translates the text into structured JSON commands via an API call to ChatGPT. The script also defines an ontology-based prompt that helps ChatGPT convert human commands into JSON commands. The ROSGPT node publishes the JSON command on the `/voice_cmd` topic.
 - **rosgpt_client_node.py**: This script establishes a ROS2 client node that sends POST requests with natural human language text to the ROSGPT REST server. It waits for the structured JSON commands and displays them upon receipt. Use the `ros2 run` command to execute this node.
 - **rosgpt_client.py**: Similar to `rosgpt_client_node.py`, this script sends POST requests with natural human language text to the ROSGPT REST server, but without implementing a ROS2 node. It solely functions as a REST client for ROSGPT. Use the `python` command, not `ros2 run`, to execute this script.
-- **rosgptparser_turtlesim.py**: This script implements the ROSGPTParser, which subscribes to the `/voice_cmd` topic and receives JSON commands. The node parses the JSON command and determines the ROS2 primitives required to execute the specified tasks. In this script, a simple navigation task for the Turtlesim robot is considered, including move and rotate functions.
+- **rosgptparser.py**: This script implements the ROSGPTParser, which subscribes to the `/voice_cmd` topic and receives JSON commands. The node parses the JSON command and determines the ROS2 primitives required to execute the specified tasks. In this script, a simple navigation task for the Turtlesim robot is considered, including move and rotate functions.
 - **rosgptparser_tb3_nav.py**: This script also implements the ROSGPTParser, subscribing to the `/voice_cmd` topic and receiving JSON commands. The JSON commands are parsed and transformed into navigation goal tasks for the Turtlebot3 robot.
 
 ## Getting Started
@@ -55,9 +55,9 @@ To get started with ROSGPT, follow these steps:
    ```bash
    ros2 run turtlesim turtlesim_node
    ```
-5. Run the rosgptparser_turtlesim.py using
+5. Run the rosgptparser.py using
    ```bash
-   ros2 run rosgpt rosgptparser_turtlesim 
+   ros2 run rosgpt rosgptparser 
    ```
 6. Run the rosgpt_client_node.py using
    ```bash
@@ -114,7 +114,7 @@ To use the ROSGPT REST API, follow these steps:
 
 1. Run the ROSGPT flask server using `ros2 run rosgpt rosgpt`.
 2. Run the turtlesim node using `ros2 run turtlesim turtlesim_node`.
-3. Run the rosgptparser_turtlesim.py using `ros2 run rosgpt rosgptparser_turtlesim`.
+3. Run the rosgptparser.py using `ros2 run rosgpt rosgptparser`.
 4. Run the rosgpt_client.py using `python rosgpt_client.py`.
 5. Send a POST request to the ROSGPT server using `curl -X POST -H "Content-Type: application/json" -d '{"text":"move forward"}' http://localhost:5000/rosgpt`. You can replace "move forward" with any natural human language text you want. The ROSGPT server will translate the text into structured JSON commands and send them back to the client.
 6. The client will display the JSON commands on the terminal. You can use these commands to control the Turtlesim robot.
