@@ -49,7 +49,7 @@ class RobotController(Node):
     def pose_callback(self, msg):
         self.x = msg.pose.pose.position.x
         self.y  = msg.pose.pose.position.y
-        self.theta  = msg.pose.pose.orientation.z
+        self.theta = msg.pose.pose.orientation.z
         self.pose = msg
         #print (self.x, self.y) #used for debegging
     
@@ -59,14 +59,16 @@ class RobotController(Node):
         try:
             cmd = json.loads(msg.data)
             cmd = json.loads(cmd['json']) #we only consider the pure json message. cmd['text'] contains a mix of text and json
+            action = cmd['action']
+            params = cmd['params']
             print('JSON command received: \n',cmd,'\n')
-            if cmd['action'] == 'go_to_goal':
-                location = cmd['params']['location']['value']
+            if action == 'go_to_goal':
+                location = params['location']['value']
                 self.go_to_goal(location)
-            elif cmd['action'] == 'move':
-                linear_speed = cmd['params'].get('linear_speed', 0.2)
-                distance = cmd['params'].get('distance', 1.0)
-                is_forward = cmd['params'].get('is_forward', True)
+            elif action == 'move':
+                linear_speed = params.get('linear_speed', 0.2)
+                distance = params.get('distance', 1.0)
+                is_forward = params.get('is_forward', True)
 
                 #METHOD 1: running an async method as a new task. But method 2 is more straightforward
                 #self.move_executor.create_task(self.move_coro(linear_speed, distance, is_forward))
@@ -77,17 +79,59 @@ class RobotController(Node):
 
                 #running move on the main thread will generate to error, as it will block rclpy.spin
                 #self.move(linear_speed, distance, is_forward)
-            elif cmd['action'] == 'rotate':
-                angular_velocity = cmd['params'].get('angular_velocity', 1.0)
-                angle = cmd['params'].get('angle', 90.0)
-                is_clockwise = cmd['params'].get('is_clockwise', True)
+            elif action == 'rotate':
+                angular_velocity = params.get('angular_velocity', 1.0)
+                angle = params.get('angle', 90.0)
+                is_clockwise = params.get('is_clockwise', True)
                 self.thread_executor.submit(self.rotate, angular_velocity, angle, is_clockwise)
                 #self.rotate(angular_velocity, angle, is_clockwise)
+            elif action == 'draw_circle':
+                radius = params.get('radius', 1.0)
+                speed = params.get('speed', 0.2)
+                self.thread_executor.submit(self.draw_circle, radius, speed)
+            elif action == 'draw_square':
+                side_length = params.get('side_length', 1.0)
+                speed = params.get('speed', 0.2)
+                self.thread_executor.submit(self.draw_square, side_length, speed)
+            elif action == 'draw_star':
+                side_length = params.get('side_length', 1.0)
+                speed = params.get('speed', 0.2)
+                self.thread_executor.submit(self.draw_star, side_length, speed)
         except json.JSONDecodeError:
             print('[json.JSONDecodeError] Invalid or empty JSON string received:', msg.data)
         except Exception as e:
-            print('[Exception] An unexpected error occurred:', str(e))   
+            print('[Exception] An unexpected error occurred:', str(e))
+    # drawing circle, square, and star
+    def draw_circle(self, radius, speed):
+        print(f'Start drawing a circle with radius {radius} meters at speed {speed} m/s')
+        twist_msg = Twist()
+        twist_msg.linear.x = speed
+        twist_msg.angular.z = speed / radius  # v = r * omega -> omega = v / r
+        duration = 2 * math.pi * radius / speed
+        start_time = self.get_clock().now().to_sec()
+        while self.get_clock().now().to_sec() - start_time < duration:
+            self.velocity_publisher.publish(twist_msg)
+            self.move_executor.spin_once(timeout_sec=0.1)
+        twist_msg.linear.x = 0.0
+        twist_msg.angular.z = 0.0
+        self.velocity_publisher.publish(twist_msg)
+        print('Circle drawing completed.')
 
+    def draw_square(self, side_length, speed):
+        print(f'Start drawing a square with side length {side_length} meters at speed {speed} m/s')
+        for _ in range(4):
+            self.move(speed, side_length, True)
+            self.rotate(30, 90, False)
+        print('Square drawing completed.')
+
+    def draw_star(self, side_length, speed):
+        print(f'Start drawing a star with side length {side_length} meters at speed {speed} m/s')
+        for _ in range(5):
+            self.move(speed, side_length, True)
+            self.rotate(30, 144, False)
+        print('Star drawing completed.')
+
+    # a simple go to goal function
     def go_to_goal(self, location):
         goal_x = location['x']
         goal_y = location['y']
